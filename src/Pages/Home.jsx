@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
-
+import Lottie from "lottie-react";
+import LoadingAnimationData from "../assets/76622-weather.json";
 const apiKey = "c8b2b10fc206530e62bc531e91cc1001";
 const Home = () => {
   const [input, setInput] = useState("");
   const [cities, setCities] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!input) {
@@ -15,39 +17,43 @@ const Home = () => {
       return;
     }
 
-    axios
-      .get(
+    setLoading(true);
+
+    try {
+      const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/weather?q=${input}&appid=${apiKey}&units=metric`
-      )
-      .then((response) => {
-        const { main, name, sys, weather } = response.data;
-        const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
+      );
 
-        const newCity = {
-          name,
-          country: sys.country,
-          temp: Math.round(main.temp),
-          feels_like: Math.round(main.feels_like),
-          temp_max: Math.round(main.temp_max),
-          temp_min: Math.round(main.temp_min),
-          description: weather[0]["description"],
-          icon,
-        };
+      const { main, name, sys, weather } = response.data;
+      const icon = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/${weather[0]["icon"]}.svg`;
 
-        const cityExists = cities.some((city) => city.name === newCity.name);
+      const newCity = {
+        name,
+        country: sys.country,
+        temp: Math.round(main.temp),
+        feels_like: Math.round(main.feels_like),
+        temp_max: Math.round(main.temp_max),
+        temp_min: Math.round(main.temp_min),
+        description: weather[0]["description"],
+        icon,
+      };
 
-        if (cityExists) {
-          setError(`${newCity.name} is already added 😉`);
-          return;
-        }
+      const cityExists = cities.some((city) => city.name === newCity.name);
 
-        setCities((prevCities) => [...prevCities, newCity]);
-        setInput("");
-        setError("");
-      })
-      .catch(() => {
-        setError("Type a valid city name!");
-      });
+      if (cityExists) {
+        setError(`${newCity.name} is already added 😉`);
+        setLoading(false);
+        return;
+      }
+
+      setCities((prevCities) => [...prevCities, newCity]);
+      setInput("");
+      setError("");
+    } catch (error) {
+      setError("Type a valid city name!");
+    }
+
+    setLoading(false);
   };
 
   const handleInputChange = (e) => {
@@ -84,48 +90,60 @@ const Home = () => {
           </div>
         </form>
 
-        <div className="grid  justify-center  m-5 gap-3 md:flex md:items-center md:justify-center md:flex-row md:flex-wrap md:gap-3">
-          {cities.length > 0 &&
-            cities.map((city) => (
-              <div className="bg-white shadow-2xl p-6 rounded-2xl border-2 border-gray-50 ">
-                <div className="flex flex-col ">
-                  <div>
-                    <h2 className="font-bold text-gray-600 text-center">
-                      {city.name}
-                    </h2>
-                  </div>
-                  <div className="my-6">
-                    <div className="flex flex-row space-x-4 items-center">
-                      <div id="icon">
-                        <span>
-                          <img
-                            src={city.icon}
-                            alt={city.description}
-                            className="w-20 pt-2"
-                          />
-                        </span>
-                      </div>
-                      <div id="temp">
-                        <h4 className="text-4xl">{city.temp}°C</h4>
-                        <p className="text-xs text-gray-500">
-                          Feels like {city.feels_like}°C
-                        </p>
-                        <p className="text-xs text-gray-500 my-2">
-                          max temperature {city.temp_max}°C
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Feels like {city.temp_min}°C
-                        </p>
+        {loading ? (
+          <div className="w-full flex justify-center items-center">
+            <Lottie
+              animationData={LoadingAnimationData}
+              width={"20px"}
+              height={"20px"}
+            />
+          </div>
+        ) : (
+          <div className="grid  justify-center  m-5 gap-3 md:flex md:items-center md:justify-center md:flex-row md:flex-wrap md:gap-3">
+            {cities.length > 0 &&
+              cities.map((city) => (
+                <div className="bg-white shadow-2xl p-6 rounded-2xl border-2 border-gray-50 ">
+                  <div className="flex flex-col ">
+                    <div>
+                      <h2 className="font-bold text-gray-600 text-center">
+                        {city.name}
+                      </h2>
+                    </div>
+                    <div className="my-6">
+                      <div className="flex flex-row space-x-4 items-center">
+                        <div id="icon">
+                          <span>
+                            <img
+                              src={city.icon}
+                              alt={city.description}
+                              className="w-20 pt-2"
+                            />
+                          </span>
+                        </div>
+                        <div id="temp">
+                          <h4 className="text-4xl">{city.temp}°C</h4>
+                          <p className="text-xs text-gray-500">
+                            Feels like {city.feels_like}°C
+                          </p>
+                          <p className="text-xs text-gray-500 my-2">
+                            max temperature {city.temp_max}°C
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Feels like {city.temp_min}°C
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="w-full place-items-end text-center border-t-2 border-gray-100 mt-2">
-                    <p className="text-xs text-gray-500">{city.description}</p>
+                    <div className="w-full place-items-end text-center border-t-2 border-gray-100 mt-2">
+                      <p className="text-xs text-gray-500">
+                        {city.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-        </div>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
